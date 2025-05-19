@@ -1,0 +1,172 @@
+"""
+MS1008 Project: Gregorian Calender
+
+Step by step (PseudoCode/ Flow Chart):
+0) All dictionary required for process (1:Jan for MMM format and 1:31 for days in month) 
+1) Obtain Input from the user
+    1.1) Ask which calender type they want (Gregorian, Julian or Both)
+    1.2) Ask for date (Preferably suitable for all type of format)
+    1.3) Convert the input into dates list (Days,Months,Years)
+2) Calculate the exact day of the inputted date (will be under def)
+    2.1) Calculate whether the inputted years is leap year or not, and change feb to 29 or 28
+    2.2) Calculate the date difference between reference date (using 1 Jan 2024)
+        2.2.1) Calculation will be in order of Years > Month > Date
+        2.2.2) Using the days difference, we can calculate the days of the week of first day of month
+3) Output the calendar using calculated days
+    3.1) Using 2 for loop of 5 times, input the days and date
+    3.2) If user inputted the days as well, highlight the date(the 29 will be red for 29/3/2001)
+    3.3) Input Julian as well if required  
+
+"""
+
+#this is for colour text baby
+from colorama import Fore,Style
+
+
+MonthName = {1:"January", 2:"February", 3:"March", 4:"April",  5:"May", 6:"June", 7:"July", 8:"August", 9:"September", 10:"October", 11:"November", 12:"December"}
+
+WeekDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+
+TotalDays = [n for n in range(1,32)]
+
+MonthDays = {1:31,2:29,3:31,4:30,5:31,6:30,7:31,8:31,9:30,10:31,11:30,12:31}
+
+def Daysoftheweek(realdates,calendar):
+    Centuryleaps = 0
+    DiffDates = 0
+    dates = [int (x) for x in realdates]
+    #calculate leap years and change febuary date 
+    if (((dates[-1] % 4 == 0) and (dates[-1] % 100 != 0)) or (dates[-1] % 400 == 0)) and calendar == 1:
+        MonthDays[2] = 29
+    elif calendar == 2 and dates[-1] % 4 == 0:
+        MonthDays[2] = 29
+    else:
+        MonthDays[2] = 28
+    #calculate difference in Years, Use negative so that it work even without dates
+    Diffyears = (dates[-1] - 2024)
+    #For calculate of leap years, for negative, 2020 easy, for positive, 2024 to 2025 consider leap year. with next one being 2028-2029
+    if Diffyears > 0:
+        leapyears = abs((Diffyears-1)//4) + 1
+    elif Diffyears <= -4:
+        #somehow, negative value//4 give 1 more value instead of significant figure ==, which make it necessary to reverse the diffyears for accuracy
+        leapyears = abs(-Diffyears//4) 
+    else:
+        leapyears = 0
+    #calendar = 1 mean Gregorian, while 2 = Julian only
+    if calendar == 1:
+        #calculate century that are NOT leap years for Gregorina
+        if dates[-1] <= 2000 :
+            #Calculate centuries passed - century leap years
+            #The purpose of Centuryleaps is to minus off the century that are not leaps years
+            Centuryleaps = ((2000 - dates[-1])//100) - ((2000 - dates[-1])//400)
+        elif dates[-1] >= 2100:
+            #To calculate century leaps, we actually need 2401 instead of 2400, hence the the dates -1
+            Centuryleaps = (((dates[-1]-1) - 2100)//100) - (((dates[-1]-1) - 2100))//400
+    #calculate actual leap years
+    leapyears = leapyears - Centuryleaps
+    #calculate days difference in months
+    for month in range(1,dates[-2]):
+        DiffDates = DiffDates + MonthDays[month]
+    #calculate days difference
+    if Diffyears > 0:
+        days = (Diffyears*365 + leapyears + DiffDates)%7
+    else:
+        days = (Diffyears*365 - leapyears + DiffDates)%7
+    #below comment for testing usage
+    #print (" Febuary days:",MonthDays[2], " Diffdates:", DiffDates, " leapyears:", leapyears, " Centuryleaps:", Centuryleaps," Diffyears:", Diffyears, " Days", days)
+    return days
+
+#def for colourful calender format
+def calenderoutput(dates,days,calendar):
+    finish = 0
+    intdates = [int(x) for x in dates]
+    numberofdays = TotalDays[0:MonthDays[intdates[-2]]]
+    #for gregorian, 1 jan 2024 is monday
+    if days != 6 and calendar == 1:
+        orderofdays = -1 - days
+    #for julian, 1 jan 2024 is sunday
+    elif days != 0 and calendar == 2:
+        orderofdays = 0 - days
+    else:
+        orderofdays = 0
+    print("=====================================================")
+    #Output gregorian or julius
+    if calendar == 1:
+        print("                  ", Fore.LIGHTCYAN_EX + Style.BRIGHT + "GREGORIAN CALENDER") 
+    else:
+        #53 length total for calender, hence around 26 space
+        print("                    ", Fore.LIGHTCYAN_EX + Style.BRIGHT + "JULIAN CALENDER") 
+    print("                         ", Fore.CYAN + Style.DIM + dates[-1])
+    print("                       ", Style.RESET_ALL + MonthName[int(dates[-2])])
+    print("")
+    for dayname in WeekDays:
+        print(" ", dayname, end= "   ")
+    #the grey colour for non month days :>
+    if orderofdays < 0:
+        print(Fore.WHITE + "")
+    else:
+        print("")
+    #print out the dates, maximum weeks is 6, and days is, well, 7
+    for week in range (0,6):
+        for days in range (0,7):
+            if (numberofdays[orderofdays]) < 10:
+                print(" ", numberofdays[orderofdays], end= "     ")
+            else:
+                print(" ", numberofdays[orderofdays], end= "    ")
+            orderofdays += 1
+            #reset color when date reach the month, only work when date still within the month
+            if (orderofdays == 0) and finish == 0:
+                print(Style.RESET_ALL + "", end= "")
+            #Reset days if finish month but calender continue
+            if orderofdays > (numberofdays[-1]-1):
+                orderofdays = 0
+                print(Fore.WHITE + "", end= "")
+                finish = 1
+        print("")
+        #stop when calender finish count the days of the months
+        if finish == 1:
+            break
+    print(Style.RESET_ALL + "=====================================================")
+
+
+#input steps
+#1) request for calendar type
+while True:
+    try:
+        inputcalender = int(input("Choose which calender you want(1 for Gregorian, 2 for Julias, 3 for both): "))
+        #only accept 3 and 1 
+        if inputcalender > 3 or inputcalender < 1:
+            print("We only accept digits from 1 to 3, please try again :>")
+            continue
+        break
+    # catch people inputting random shit
+    except:
+        print("Please input digits from 1 to 3 only, please try again :>")
+
+#2) reques for date
+while True:
+    inputdate = input("what is the requested date in dd/mm/yyyy:  ")
+    if inputdate.count("/") != 2:
+        print("Please try again and make sure format is dd/mm/yyyy")
+        continue
+    else:
+        dates = inputdate.split("/")
+        if (int(dates[-2]) in MonthName):
+            if (1 <= int(dates[0]) <= MonthDays[int(dates[-2])]):
+                print("good")
+                break
+            else:
+                print("Date not valid, please try again")
+                continue
+        else:
+            print("Month not valid, please try again.")
+            continue
+
+if inputcalender == 3:
+    days = Daysoftheweek(dates, 1)
+    calenderoutput(dates, days,1)
+    days = Daysoftheweek(dates, 2)
+    calenderoutput(dates, days,2)
+else:
+    days = Daysoftheweek(dates, inputcalender)
+    calenderoutput(dates, days, inputcalender)
